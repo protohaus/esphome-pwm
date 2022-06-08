@@ -1,0 +1,147 @@
+substitutions:
+  #general settings
+  host_name: led2-example
+  device_name: led2_example
+  device_name_upper: led2.example
+  status_led_pin: GPIO33
+  status_led_interval_ok: 10s
+  status_led_interval_booting: 3s
+  settings_log_level: DEBUG
+  settings_flash_write_interval: 1min
+  
+  # Dallas settings
+  sensor_dallas_hub_1_pin: GPIO25
+  sensor_dallas_hub_1_name: dallas_hub_1
+  sensor_dallas_hub_1_update_interval: 1s
+  sensor_dallas_1_hub_id: ${sensor_dallas_hub_1_name}
+  sensor_dallas_1_name: dallas_1
+  sensor_dallas_2_hub_id: ${sensor_dallas_hub_1_name}
+  sensor_dallas_2_name: dallas_2
+  
+  # Hall Sensor settings
+  sensor_current_hall_1_pin: GPIO35
+  sensor_current_hall_1_name: hall_a
+  
+  sensor_current_hall_2_pin: GPIO34
+  sensor_current_hall_2_name: hall_b
+  
+  # LED Settings
+  pwm_led_frequency: "1000Hz"
+  
+  pwm_led_cc_1_name: cc_a_1_630nm
+  pwm_led_cc_2_name: cc_a_2_630nm
+  pwm_led_cc_3_name: cc_a_3_630nm
+  pwm_led_cc_4_name: cc_a_4_630nm
+  pwm_led_cc_5_name: cc_b_1_630nm
+  pwm_led_cc_6_name: cc_b_2_630nm
+  pwm_led_cc_7_name: cc_b_3_630nm
+  pwm_led_cc_8_name: cc_b_4_630nm
+  
+  pwm_led_cc_1_max_value: "1.0"
+  pwm_led_cc_2_max_value: "1.0"
+  pwm_led_cc_3_max_value: "1.0"
+  pwm_led_cc_4_max_value: "1.0"
+  pwm_led_cc_5_max_value: "1.0"
+  pwm_led_cc_6_max_value: "1.0"
+  pwm_led_cc_7_max_value: "1.0"
+  pwm_led_cc_8_max_value: "1.0"
+  
+button:
+  - platform: template
+    name: ${device_name}.cc_on
+    id: ${device_name}_cc_on
+    on_press:
+      - button.press: ${device_name}_cc_a_on
+      - button.press: ${device_name}_cc_b_on
+  
+  - platform: template
+    name: ${device_name}.cc_off
+    id: ${device_name}_cc_off
+    on_press:
+      - button.press: ${device_name}_cc_a_off
+      - button.press: ${device_name}_cc_b_off
+      
+  - platform: template
+    name: ${device_name}.cc_a_on
+    id: ${device_name}_cc_a_on
+    on_press:
+      - light.turn_on: ${device_name}_${pwm_led_cc_1_name}
+      - light.turn_on: ${device_name}_${pwm_led_cc_2_name}
+      - light.turn_on: ${device_name}_${pwm_led_cc_3_name}
+      - light.turn_on: ${device_name}_${pwm_led_cc_4_name}
+  
+  - platform: template
+    name: ${device_name}.cc_a_off
+    id: ${device_name}_cc_a_off
+    on_press:
+      - light.turn_off: ${device_name}_${pwm_led_cc_1_name}
+      - light.turn_off: ${device_name}_${pwm_led_cc_2_name}
+      - light.turn_off: ${device_name}_${pwm_led_cc_3_name}
+      - light.turn_off: ${device_name}_${pwm_led_cc_4_name}
+
+  - platform: template
+    name: ${device_name}.cc_b_on
+    id: ${device_name}_cc_b_on
+    on_press:
+      - light.turn_on: ${device_name}_${pwm_led_cc_5_name}
+      - light.turn_on: ${device_name}_${pwm_led_cc_6_name}
+      - light.turn_on: ${device_name}_${pwm_led_cc_7_name}
+      - light.turn_on: ${device_name}_${pwm_led_cc_8_name}
+  
+  - platform: template
+    name: ${device_name}.cc_b_off
+    id: ${device_name}_cc_b_off
+    on_press:
+      - light.turn_off: ${device_name}_${pwm_led_cc_5_name}
+      - light.turn_off: ${device_name}_${pwm_led_cc_6_name}
+      - light.turn_off: ${device_name}_${pwm_led_cc_7_name}
+      - light.turn_off: ${device_name}_${pwm_led_cc_8_name}
+      
+globals:
+  - id: ${device_name}_leds_on
+    type: bool
+    restore_value: no
+    initial_value: "false"  
+    
+switch:        
+  - platform: template
+    name: ${device_name}.cc_switch
+    id: ${device_name}_cc_switch
+    lambda: |-
+      return id(${device_name}_leds_on);
+    turn_on_action:
+      - button.press: ${device_name}_cc_on
+      - globals.set:
+          id: ${device_name}_leds_on
+          value: "true"
+    turn_off_action:
+      - button.press: ${device_name}_cc_off
+      - globals.set:
+          id: ${device_name}_leds_on
+          value: "false"
+          
+esphome:
+  name: ${host_name}
+  platform: ESP32
+  board: esp32dev
+  #board: nodemcu-32s
+  
+packages:
+  common_api: !include common/api.yaml
+  common_base: !include common/base.yaml
+  common_status: !include common/status.yaml
+  common_restart: !include common/restart.yaml
+  #sensor_dallas_hub_1: !include sensors/dallas_hub_1.yaml
+  #sensor_dallas_1: !include sensors/dallas_1.yaml
+  #sensor_dallas_2: !include sensors/dallas_2.yaml
+  sensor_current_hall_1: !include sensors/current_hall_1.yaml
+  sensor_current_hall_2: !include sensors/current_hall_2.yaml
+  pwm_led_gpio_config: !include pwm/led_cc_gpio_config.yaml
+  pwm_led_1: !include pwm/led_cc_1.yaml
+  pwm_led_2: !include pwm/led_cc_2.yaml
+  pwm_led_3: !include pwm/led_cc_3.yaml
+  pwm_led_4: !include pwm/led_cc_4.yaml
+  pwm_led_5: !include pwm/led_cc_5.yaml
+  pwm_led_6: !include pwm/led_cc_6.yaml
+  pwm_led_7: !include pwm/led_cc_7.yaml
+  pwm_led_8: !include pwm/led_cc_8.yaml

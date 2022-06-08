@@ -1,0 +1,120 @@
+substitutions:
+  #general settings
+  host_name: pwm-example
+  device_name: pwm_example
+  device_name_upper: pwm.example
+  status_led_pin: GPIO33
+  status_led_interval_ok: 10s
+  status_led_interval_booting: 3s
+  settings_log_level: VERBOSE
+  settings_flash_write_interval: 1min
+  
+  # Dallas settings
+  sensor_dallas_hub_1_pin: GPIO13
+  sensor_dallas_hub_1_name: dallas_hub_1
+  sensor_dallas_hub_1_update_interval: 1s
+  sensor_dallas_1_hub_id: ${sensor_dallas_hub_1_name}
+  sensor_dallas_1_name: dallas_inside
+  sensor_dallas_1_force_update: "true"
+  sensor_dallas_2_hub_id: ${sensor_dallas_hub_1_name}
+  sensor_dallas_2_name: dallas_outside
+  sensor_dallas_2_force_update: "true"
+  sensor_dallas_3_hub_id: ${sensor_dallas_hub_1_name}
+  sensor_dallas_3_name: dallas_24_36V_case
+  sensor_dallas_3_force_update: "true"
+  
+  # LED Settings
+  pwm_led_frequency: "1000Hz"
+  pwm_led_cc_9_name: cc_a_1_white
+  pwm_led_cc_10_name: cc_a_2_white
+  pwm_led_cc_11_name: cc_a_3_520nm
+  
+  pwm_led_cc_9_max_value: "1.0"
+  pwm_led_cc_10_max_value: "1.0"
+  pwm_led_cc_11_max_value: "1.0"
+  
+  
+  # PWM settings
+  pwm_fan_frequency: "1000Hz"
+  pwm_fan_max_value: "1.0"
+  pwm_fan_pin: "GPIO32"
+  pwm_fan_name: cc_a_4_fan
+
+button:
+  - platform: template
+    name: ${device_name}.cc_on
+    id: ${device_name}_cc_on
+    on_press:
+      - light.turn_on: ${device_name}_${pwm_led_cc_9_name}
+      - light.turn_on: ${device_name}_${pwm_led_cc_10_name}
+      - light.turn_on: ${device_name}_${pwm_led_cc_11_name}
+  
+  - platform: template
+    name: ${device_name}.cc_off
+    id: ${device_name}_cc_off
+    on_press:
+      - light.turn_off: ${device_name}_${pwm_led_cc_9_name}
+      - light.turn_off: ${device_name}_${pwm_led_cc_10_name}
+      - light.turn_off: ${device_name}_${pwm_led_cc_11_name}
+
+globals:
+  - id: ${device_name}_leds_on
+    type: bool
+    restore_value: no
+    initial_value: "false"  
+    
+switch:  
+  - platform: template
+    name: ${device_name}.cc_white_switch
+    id: ${device_name}_cc_white_switch
+    lambda: |-
+      return id(${device_name}_leds_on);
+    turn_on_action:
+      - light.turn_on: ${device_name}_${pwm_led_cc_9_name}
+      - light.turn_on: ${device_name}_${pwm_led_cc_10_name}
+      - globals.set:
+          id: ${device_name}_leds_on
+          value: "true"
+    turn_off_action:
+      - light.turn_off: ${device_name}_${pwm_led_cc_9_name}
+      - light.turn_off: ${device_name}_${pwm_led_cc_10_name}
+      - globals.set:
+          id: ${device_name}_leds_on
+          value: "false"
+          
+  - platform: template
+    name: ${device_name}.cc_switch
+    id: ${device_name}_cc_switch
+    lambda: |-
+      return id(${device_name}_leds_on);
+    turn_on_action:
+      - button.press: ${device_name}_cc_on
+      - globals.set:
+          id: ${device_name}_leds_on
+          value: "true"
+    turn_off_action:
+      - button.press: ${device_name}_cc_off
+      - globals.set:
+          id: ${device_name}_leds_on
+          value: "false"
+          
+esphome:
+  name: ${host_name}
+  platform: ESP32
+  board: esp32dev
+  
+packages:
+  common_api: !include common/api.yaml
+  common_base: !include common/base.yaml
+  common_status: !include common/status.yaml
+  common_restart: !include common/restart.yaml
+  sensor_dallas_hub_1: !include sensors/dallas_hub_1.yaml
+  sensor_dallas_1: !include sensors/dallas_1.yaml
+  sensor_dallas_2: !include sensors/dallas_2.yaml
+  sensor_dallas_3: !include sensors/dallas_3.yaml
+  sensor_dallas_adress_config: !include sensors/dallas_adress_config.yaml
+  pwm_led_gpio_config: !include pwm/led_cc_gpio_config.yaml
+  pwm_fan: !include pwm/fan.yaml
+  pwm_led_9: !include pwm/led_cc_9.yaml
+  pwm_led_10: !include pwm/led_cc_10.yaml
+  pwm_led_11: !include pwm/led_cc_11.yaml
